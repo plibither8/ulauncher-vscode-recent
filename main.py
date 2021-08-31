@@ -93,7 +93,7 @@ class CodeExtension(Extension):
 			existing = next((c for c in data if c["uri"] == recent["uri"]), None)
 			if (recent is not None and existing is None):
 				data.append(recent)
-		for recent in data:
+		for recent in data[:20]:
 			items.append(
 				ExtensionSmallResultItem(
 					icon=Utils.get_path(
