@@ -10,6 +10,8 @@ Quickly open recently-opened VS Code project directories and files.
 
 - [Ulauncher 5](https://ulauncher.io/)
 - Python >= 3
+- `fuzzywuzzy` module.
+  Install this using `pip`: `pip install fuzzywuzzy`
 
 ### Steps
 
