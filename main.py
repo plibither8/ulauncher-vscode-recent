@@ -28,7 +28,7 @@ class Utils:
 
 
 class Code:
-	open_command_paths = ["/usr/bin/code", "/bin/code"]
+	open_command_paths = ["/usr/bin/code", "/bin/code", "/snap/bin/code"]
 
 	def get_installed_path(self):
 		for path in self.open_command_paths:
