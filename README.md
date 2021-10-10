@@ -31,4 +31,6 @@ Default keyword to trigger this extension is **`code`**. This can be changed in 
 
 ## License
 
-[MIT](LICENSE)
+This source code is released under the [MIT](LICENSE) license.
+
+The icons are from [github.com/vscode-icons/vscode-icons](https://github.com/vscode-icons/vscode-icons), which are available under the Creative Commons - ShareAlike (CC BY-SA) license.
