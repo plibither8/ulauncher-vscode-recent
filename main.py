@@ -28,12 +28,17 @@ class Utils:
 
 
 class Code:
-	open_command_paths = ["/usr/bin/code", "/bin/code", "/snap/bin/code"]
+	path_dirs = ("/usr/bin", "/bin", "/snap/bin")
+	variants = ("Code", "VSCodium")
 
-	def get_installed_path(self):
-		for path in self.open_command_paths:
-			if os.path.exists(path):
-				return path
+	@staticmethod
+	def find_code():
+		for path in (pathlib.Path(path_dir) for path_dir in Code.path_dirs):
+			for variant in Code.variants:
+				installed_path = path / variant.lower()
+				config_path = pathlib.Path.home() / ".config" / variant / "storage.json"
+				if installed_path.exists() and config_path.exists():
+					return installed_path, config_path,
 		return False
 
 	def is_installed(self):
@@ -41,28 +46,41 @@ class Code:
 
 	def get_recents(self):
 		recents = []
-		storage = json.load(
-			open(Utils.get_path(".config/Code/storage.json", True), "r"))
+
+		storage = json.load(self.config_path.open("r"))
 		openedPaths = storage["openedPathsList"]["entries"]
 		for path in openedPaths:
-			folder = "folderUri" in path
-			uri = path["folderUri"] if folder else path["fileUri"]
+			if "folderUri" in path:
+				uri = path["folderUri"]
+				icon = "folder"
+				option = "--folder-uri"
+			elif "fileUri" in path:
+				uri = path["fileUri"]
+				icon = "file"
+				option = "--file-uri"
+			elif "workspace" in path:
+				uri = path["workspace"]["configPath"]
+				icon = "workspace"
+				option = "--file-uri"
+			else:
+				continue
+
 			label = path["label"] if "label" in path else uri.split("/")[-1]
 			recents.append({
-				"folder": folder,
-				"uri": uri,
-				"label": label
+				"uri":    uri,
+				"label":  label,
+				"icon":   icon,
+				"option": option,
 			})
 		return recents
 
 	def open_vscode(self, recent):
 		if not self.is_installed():
 			return
-		option = "--folder-uri" if recent["folder"] else "--file-uri"
-		os.system(f"{self.installed_path} {option} {recent['uri']}")
+		os.system(f"{self.installed_path} {recent['option']} {recent['uri']}")
 
 	def __init__(self):
-		self.installed_path = self.get_installed_path()
+		self.installed_path, self.config_path = self.find_code()
 
 
 class CodeExtension(Extension):
@@ -96,8 +114,7 @@ class CodeExtension(Extension):
 		for recent in data[:20]:
 			items.append(
 				ExtensionSmallResultItem(
-					icon=Utils.get_path(
-						f"images/{'folder' if recent['folder'] else 'file'}.svg"),
+					icon=Utils.get_path(f"images/{recent['icon']}.svg"),
 					name=recent["label"],
 					on_enter=ExtensionCustomAction(recent),
 				)
