@@ -1,8 +1,9 @@
 import os
 import os.path
 import json
+import logging
 import pathlib
-from types import prepare_class
+import sqlite3
 from ulauncher.api.client.Extension import Extension
 from ulauncher.api.client.EventListener import EventListener
 from ulauncher.api.shared.event import (
@@ -18,6 +19,8 @@ from ulauncher.api.shared.action.HideWindowAction import HideWindowAction
 from ulauncher.api.shared.action.ExtensionCustomAction import ExtensionCustomAction
 from fuzzywuzzy import process, fuzz
 
+logger = logging.getLogger(__name__)
+
 
 class Utils:
 	@staticmethod
@@ -31,25 +34,74 @@ class Code:
 	path_dirs = ("/usr/bin", "/bin", "/snap/bin")
 	variants = ("Code", "VSCodium")
 
-	@staticmethod
-	def find_code():
+	def __init__(self):
+		self.installed_path = None
+		self.config_path = None
+		self.global_state_db = None
+		self.storage_json = None
+
+		logger.debug('locating installation and config directories')
 		for path in (pathlib.Path(path_dir) for path_dir in Code.path_dirs):
 			for variant in Code.variants:
 				installed_path = path / variant.lower()
-				config_path = pathlib.Path.home() / ".config" / variant / "storage.json"
-				if installed_path.exists() and config_path.exists():
-					return installed_path, config_path,
-		return False
+				config_path = pathlib.Path.home() / ".config" / variant
+				logger.debug('evaluating installation dir %s and config dir %s', installed_path, config_path)
+				if installed_path.exists() and config_path.exists() and (config_path / "storage.json").exists():
+					logger.debug('found installation dir %s and config dir %s', installed_path, config_path)
+					self.installed_path = installed_path
+					self.config_path = config_path
+					self.global_state_db = config_path / 'User' / 'globalStorage' / 'state.vscdb'
+					self.storage_json = config_path / 'storage.json'
+					return
+
+		logger.warning('Unable to find VS Code installation and config directory')
 
 	def is_installed(self):
 		return bool(self.installed_path)
 
 	def get_recents(self):
-		recents = []
 
-		storage = json.load(self.config_path.open("r"))
-		openedPaths = storage["openedPathsList"]["entries"]
-		for path in openedPaths:
+		# Current
+		if self.global_state_db.exists():
+			logger.debug('getting recents from global state database')
+			try:
+				return self.get_recents_global_state()
+			except Exception as e:
+				logger.error('getting recents from global state database failed', e)
+				if not self.storage_json.exists():
+					raise e
+
+		# Legacy
+		if self.storage_json.exists():
+			logger.debug('getting recents from storage.json (legacy)')
+			return self.get_recents_legacy()
+
+	def get_recents_global_state(self) -> list[dict[str, str]]:
+		logger.debug('connecting to global state database %s', self.global_state_db)
+		con = sqlite3.connect(self.global_state_db)
+		cur = con.cursor()
+		cur.execute('SELECT value FROM ItemTable WHERE key = "history.recentlyOpenedPathsList"')
+		json_code, = cur.fetchone()
+		paths_list = json.loads(json_code)
+		entries = paths_list['entries']
+		logger.debug('found %d entries in global state database', len(entries))
+		return self.parse_entry_paths(entries)
+
+	def get_recents_legacy(self):
+		"""
+		For Visual Studio Code Pre versions before 1.64
+		:uri https://code.visualstudio.com/updates/v1_64
+		"""
+		logger.debug('loading storage.json')
+		storage = json.load(self.storage_json.open("r"))
+		entries = storage["openedPathsList"]["entries"]
+		logger.debug('found %d entries in storage.json', len(entries))
+		return self.parse_entry_paths(entries)
+
+	@staticmethod
+	def parse_entry_paths(entries) -> list[dict[str, str]]:
+		recents = []
+		for path in entries:
 			if "folderUri" in path:
 				uri = path["folderUri"]
 				icon = "folder"
@@ -63,6 +115,7 @@ class Code:
 				icon = "workspace"
 				option = "--file-uri"
 			else:
+				logger.warning('entry not recognized: %s', path)
 				continue
 
 			label = path["label"] if "label" in path else uri.split("/")[-1]
@@ -78,9 +131,6 @@ class Code:
 		if not self.is_installed():
 			return
 		os.system(f"{self.installed_path} {recent['option']} {recent['uri']}")
-
-	def __init__(self):
-		self.installed_path, self.config_path = self.find_code()
 
 
 class CodeExtension(Extension):
