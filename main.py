@@ -76,7 +76,7 @@ class Code:
 			logger.debug('getting recents from storage.json (legacy)')
 			return self.get_recents_legacy()
 
-	def get_recents_global_state(self) -> list[dict[str, str]]:
+	def get_recents_global_state(self):
 		logger.debug('connecting to global state database %s', self.global_state_db)
 		con = sqlite3.connect(self.global_state_db)
 		cur = con.cursor()
