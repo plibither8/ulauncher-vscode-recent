@@ -99,7 +99,7 @@ class Code:
 		return self.parse_entry_paths(entries)
 
 	@staticmethod
-	def parse_entry_paths(entries) -> list[dict[str, str]]:
+	def parse_entry_paths(entries):
 		recents = []
 		for path in entries:
 			if "folderUri" in path:
