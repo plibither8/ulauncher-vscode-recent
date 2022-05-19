@@ -45,13 +45,15 @@ class Code:
 			for variant in Code.variants:
 				installed_path = path / variant.lower()
 				config_path = pathlib.Path.home() / ".config" / variant
-				logger.debug('evaluating installation dir %s and config dir %s', installed_path, config_path)
-				if installed_path.exists() and config_path.exists() and (config_path / "storage.json").exists():
-					logger.debug('found installation dir %s and config dir %s', installed_path, config_path)
+				logger.debug('evaluating installation dir %s and config dir %s',
+				             installed_path, config_path)
+				if installed_path.exists() and config_path.exists() and (config_path / "User" / "globalStorage" / "storage.json").exists():
+					logger.debug('found installation dir %s and config dir %s',
+					             installed_path, config_path)
 					self.installed_path = installed_path
 					self.config_path = config_path
 					self.global_state_db = config_path / 'User' / 'globalStorage' / 'state.vscdb'
-					self.storage_json = config_path / 'storage.json'
+					self.storage_json = config_path / 'User' / 'globalStorage' / 'storage.json'
 					return
 
 		logger.warning('Unable to find VS Code installation and config directory')
@@ -80,7 +82,8 @@ class Code:
 		logger.debug('connecting to global state database %s', self.global_state_db)
 		con = sqlite3.connect(self.global_state_db)
 		cur = con.cursor()
-		cur.execute('SELECT value FROM ItemTable WHERE key = "history.recentlyOpenedPathsList"')
+		cur.execute(
+			'SELECT value FROM ItemTable WHERE key = "history.recentlyOpenedPathsList"')
 		json_code, = cur.fetchone()
 		paths_list = json.loads(json_code)
 		entries = paths_list['entries']
@@ -150,8 +153,10 @@ class CodeExtension(Extension):
 		recents = self.code.get_recents()
 		items = []
 		data = []
-		label_matches = process.extract(query, choices=map(lambda c: c["label"], recents), limit=20, scorer=fuzz.partial_ratio)
-		uri_matches = process.extract(query, choices=map(lambda c: c["uri"], recents), limit=20, scorer=fuzz.partial_ratio)
+		label_matches = process.extract(query, choices=map(
+			lambda c: c["label"], recents), limit=20, scorer=fuzz.partial_ratio)
+		uri_matches = process.extract(query, choices=map(
+			lambda c: c["uri"], recents), limit=20, scorer=fuzz.partial_ratio)
 		for match in label_matches:
 			recent = next((c for c in recents if c["label"] == match[0]), None)
 			if (recent is not None and match[1] > 95):
