@@ -4,6 +4,7 @@ import json
 import logging
 import pathlib
 import sqlite3
+import urllib
 from ulauncher.api.client.Extension import Extension
 from ulauncher.api.client.EventListener import EventListener
 from ulauncher.api.shared.event import (
@@ -170,7 +171,7 @@ class CodeExtension(Extension):
 			items.append(
 				ExtensionSmallResultItem(
 					icon=Utils.get_path(f"images/{recent['icon']}.svg"),
-					name=recent["label"],
+					name=urllib.parse.unquote(recent["label"]),
 					on_enter=ExtensionCustomAction(recent),
 				)
 			)
