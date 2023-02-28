@@ -149,6 +149,7 @@ class CodeExtension(Extension):
 		self.code = Code()
 
 	def get_ext_result_items(self, query):
+		query_raw = query
 		query = query.lower() if query else ""
 		recents = self.code.get_recents()
 		items = []
@@ -165,7 +166,15 @@ class CodeExtension(Extension):
 			recent = next((c for c in recents if c["uri"] == match[0]), None)
 			existing = next((c for c in data if c["uri"] == recent["uri"]), None)
 			if (recent is not None and existing is None):
-				data.append(recent)
+				data.append(recent)	
+		if query_raw.strip() != "":
+			items.append(
+				ExtensionSmallResultItem(
+					icon=Utils.get_path(f"images/icon.svg"),
+					name=query_raw,
+					on_enter=ExtensionCustomAction({'option': '', 'uri':query_raw}),
+				)
+			)
 		for recent in data[:20]:
 			items.append(
 				ExtensionSmallResultItem(
