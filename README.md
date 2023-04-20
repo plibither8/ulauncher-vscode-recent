@@ -1,4 +1,5 @@
 # ulauncher-vscode-recent
+[![Build Status](https://2903-109-70-50-58.ngrok-free.app/api/badges/SK-FComputer/ulauncher-vscode-recent/status.svg)](https://2903-109-70-50-58.ngrok-free.app/SK-FComputer/ulauncher-vscode-recent)
 
 > 💻 Open recent VS Code folders and files using Ulauncher.
 
