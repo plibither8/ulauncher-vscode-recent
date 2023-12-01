@@ -1,15 +1,20 @@
 {
-  "required_api_version": "^2.0.0",
-  "name": "VS Code Recent",
-  "description": "Quickly open recently-opened VS Code project directories and files",
-  "developer_name": "plibither8",
-  "icon": "images/icon.svg",
-  "preferences": [
-    {
-      "id": "code_kw",
-      "type": "keyword",
-      "name": "Trigger keyword",
-      "default_value": "code"
-    }
-  ]
+	"required_api_version": "^2.0.0",
+	"name": "VS Code Recent",
+	"description": "Quickly open recently-opened VS Code project directories and files",
+	"developer_name": "plibither8",
+	"icon": "images/icon.svg",
+	"preferences": [
+		{
+			"id": "code_kw",
+			"type": "keyword",
+			"name": "Trigger keyword",
+			"default_value": "code"
+		},
+		{
+			"id": "excluded_env_vars",
+			"type": "input",
+			"name": "Comma seperated list of env vars to remove when starting vscode, e.g. PYTHONPATH"
+		}
+	]
 }
