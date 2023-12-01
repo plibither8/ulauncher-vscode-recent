@@ -5,6 +5,7 @@ import logging
 import pathlib
 import sqlite3
 import urllib
+import subprocess
 from ulauncher.api.client.Extension import Extension
 from ulauncher.api.client.EventListener import EventListener
 from ulauncher.api.shared.event import (
@@ -131,14 +132,26 @@ class Code:
 			})
 		return recents
 
-	def open_vscode(self, recent):
+	def open_vscode(self, recent, excluded_env_vars):
 		if not self.is_installed():
 			return
-		os.system(f"{self.installed_path} {recent['option']} {recent['uri']}")
+		# Get the current environment variables
+		current_env = os.environ.copy()
+
+		# Remove the environment variables that we don't want to pass to the new process if any
+		if excluded_env_vars:
+			for env_var in excluded_env_vars.split(','):
+				env_to_exclude = env_var.strip()
+				if env_to_exclude in current_env:
+					del current_env[env_to_exclude]
+
+		# Start the new process with the modified environment
+		subprocess.run([self.installed_path, recent['option'], recent['uri']], env=current_env)
 
 
 class CodeExtension(Extension):
 	keyword = None
+	excluded_env_vars = None
 	code = None
 
 	def __init__(self):
@@ -202,18 +215,21 @@ class KeywordQueryEventListener(EventListener):
 class ItemEnterEventListener(EventListener):
 	def on_event(self, event, extension):
 		recent = event.get_data()
-		extension.code.open_vscode(recent)
+		extension.code.open_vscode(recent, extension.excluded_env_vars)
 
 
 class PreferencesEventListener(EventListener):
 	def on_event(self, event, extension):
 		extension.keyword = event.preferences["code_kw"]
+		extension.excluded_env_vars = event.preferences['excluded_env_vars']
 
 
 class PreferencesUpdateEventListener(EventListener):
 	def on_event(self, event, extension):
 		if event.id == "code_kw":
 			extension.keyword = event.new_value
+		if event.id == "excluded_env_vars":
+			extension.excluded_env_vars = event.new_value
 
 
 if __name__ == "__main__":
